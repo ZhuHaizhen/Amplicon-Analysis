@@ -41,7 +41,7 @@ grep '>' -c cave_otus_filtered.fa
 assign_taxonomy.py -i $PWD/cave_otus_filtered.fa -o $PWD/GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
 
 # make OTU table
-usearch7.0 -usearch_global cave_reads_uparse.fa -db cave_otus_filtered.fa -strand plus -id 0.97 -uc map.uc
+usearch7.0 -usearch_global cave_uparse.fa -db cave_otus_filtered.fa -strand plus -id 0.97 -uc map.uc
 python /data/share/scripts/map2qiime.py map.uc > otu_map.txt
 make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/otus_tax_assignments.txt -o cave_otu_table.biom
 
