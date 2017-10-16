@@ -1,37 +1,35 @@
-#merge the paired-ends sequences
+# merge the paired-ends sequences
 pear-0.9.6-bin-64 -f raw.split.C1A01.1.fq -r raw.split.C1A01.2.fq -o C1A01
 
 # sequence rename
-
 perl -i.bak -pe 'if ($.%4==1){$count++;s/(^\@).*/$1C1A01_$count/}' C1A01.assembled.fastq
 
-
-#merge all sequences into one file
+# merge all sequences into one file
 cat *.assembled.fastq > cave.fastq
 
-#quality control
+# quality control
 usearch7.0 -fastq_filter cave.fastq -fastq_maxee 0.5 -fastaout cave.fasta
 
-#rename for Uparse
+# rename for Uparse
 perl /data/share/scripts/bmp-Qiime2Uparse.pl -i $PWD/cave.fasta -o cave_uparse.fa
 
-#derep
+# derep
 usearch7.0 -derep_fulllength $PWD/cave_uparse.fa -output cave_derep.fa -sizeout
 
-#remove singletons
+# remove singletons
 usearch7.0 -sortbysize cave_derep.fa -output cave_sorted.fa -minsize 2
 
-#OTU cluster
+# OTU cluster
 usearch7.0 -cluster_size cave_sorted.fa -consout cave_otus1.fa -id 0.97 -relabel OTU_ -sizeout
 
-#uchime
+# uchime
 usearch7.0 -uchime_ref cave_otus1.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave_otus2.fa
 
 #rename
 perl /data/share/scripts/multiple-line-to-single-line.pl cave_otus2.fa cave_otus.fa
 perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*;$/\1OTU_$count/g}' cave_otus.fa
 
-#remove non-bacterial sequences
+# remove non-bacterial sequences
 qiime
 align_seqs.py -i cave_otus.fa -t gg_13_8_otus/rep_set_aligned/97_otus.fasta -o aligned/
 grep -c '>' aligned/cave_otus_failures.fasta
@@ -39,13 +37,13 @@ grep '>' aligned/cave_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > aligned
 filter_fasta.py -f cave_otus.fa -o cave_otus_filtered.fa -s aligned/cave_otus_failures.id -n
 grep '>' -c cave_otus_filtered.fa
 
-#taxonomy assignment
+# taxonomy assignment
 assign_taxonomy.py -i $PWD/cave_otus_filtered.fa -o $PWD/GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
 
-#make OTU table
+# make OTU table
 usearch7.0 -usearch_global cave_reads_uparse.fa -db cave_otus_filtered.fa -strand plus -id 0.97 -uc map.uc
 python /data/share/scripts/map2qiime.py map.uc > otu_map.txt
 make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/otus_tax_assignments.txt -o cave_otu_table.biom
 
-#OTU table filteration
+# OTU table filteration
 filter_otus_from_otu_table.py --min_count_fraction 0.0001 -i cave_otu_table.biom -o cave_otu_table_filtered.biom
