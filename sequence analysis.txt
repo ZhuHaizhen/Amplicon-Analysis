@@ -1,0 +1,43 @@
+# sequence rename
+perl -pe 'if ($.%4==1){$count++;s/(^\@).*/$1N1-1_$count/}' A1.fastq > A.fastq
+
+#quality control
+usearch7.0 -fastq_filter A.fastq -fastq_maxee 0.5 -fastaout reads.fasta
+
+#rename for Uparse
+perl /data/share/scripts/bmp-Qiime2Uparse.pl -i $PWD/reads.fasta -o reads_uparse.fa
+
+#derep
+usearch7.0 -derep_fulllength $PWD/reads_uparse.fa -output derep.fa -sizeout
+
+#remove singletons
+usearch7.0 -sortbysize derep.fa -output sorted.fa -minsize 2
+
+#OTU cluster
+usearch7.0 -cluster_size cave_sorted.fa -consout cave_otus1.fa -id 0.97 -relabel OTU_ -sizeout
+
+#uchime
+usearch7.0 -uchime_ref otus1.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras otus2.fa
+
+#rename
+perl /data/share/scripts/multiple-line-to-single-line.pl otus2.fa otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*;$/\1OTU_$count/g}' otus.fa
+
+#remove non-bacteria sequences
+qiime
+align_seqs.py -i otus.fa -t gg_13_8_otus/rep_set_aligned/97_otus.fasta -o aligned/
+grep -c '>' temp/aligned/otus_non_chimera_failures.fasta
+grep '>' temp/aligned/otus_non_chimera_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > temp/aligned/otus_non_chimera_failures.id
+filter_fasta.py -f temp/otus_non_chimera.fa -o temp/otus_rdp_align.fa -s temp/aligned/otus_non_chimera_failures.id -n
+grep '>' -c temp/otus_rdp_align.fa
+
+#taxonomy assignment
+assign_taxonomy.py -i $PWD/otus.fa -o $PWD/GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
+
+#make OTU table
+usearch7.0 -usearch_global reads_uparse.fa -db otus.fa -strand plus -id 0.97 -uc map.uc
+python /data/share/scripts/map2qiime.py map.uc > otu_map.txt
+make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/otus_tax_assignments.txt -o otu_table.biom
+
+#OTU table filteration
+filter_otus_from_otu_table.py --min_count_fraction 0.0001 -i result/otu_table2.biom -o result/otu_table3.biom
