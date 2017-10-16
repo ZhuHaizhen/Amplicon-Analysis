@@ -43,7 +43,7 @@ assign_taxonomy.py -i $PWD/cave_otus_filtered.fa -o $PWD/GG_assigned_taxonomy -r
 # make OTU table
 usearch7.0 -usearch_global cave_uparse.fa -db cave_otus_filtered.fa -strand plus -id 0.97 -uc map.uc
 python /data/share/scripts/map2qiime.py map.uc > otu_map.txt
-make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/otus_tax_assignments.txt -o cave_otu_table.biom
+make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/cave_otus_filtered_tax_assignments.txt -o cave_otu_table.biom
 
 # OTU table filteration
 filter_otus_from_otu_table.py --min_count_fraction 0.0001 -i cave_otu_table.biom -o cave_otu_table_filtered.biom
