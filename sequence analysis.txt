@@ -1,8 +1,6 @@
 #merge the paired-ends sequences
 pear-0.9.6-bin-64/pear-0.9.6-bin-64 -f BN4-143.filter.R1.fq -r BN4-143.filter.R2.fq -o BN4-143
 
-
-
 # sequence rename
 perl -pe 'if ($.%4==1){$count++;s/(^\@).*/$1N1-1_$count/}' A1.fastq > A.fastq
 
