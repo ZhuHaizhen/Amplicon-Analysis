@@ -22,15 +22,15 @@ usearch7.0 -sortbysize cave_derep.fa -output cave_sorted.fa -minsize 2
 # OTU cluster
 usearch7.0 -cluster_size cave_sorted.fa -consout cave_otus1.fa -id 0.97 -relabel OTU_ -sizeout
 
-# uchime
+# remove chimeras
 usearch7.0 -uchime_ref cave_otus1.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave_otus2.fa
 
-#rename
+# transformation
 perl /data/share/scripts/multiple-line-to-single-line.pl cave_otus2.fa cave_otus.fa
 perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*;$/\1OTU_$count/g}' cave_otus.fa
 
 # remove non-bacterial sequences
-source activate qiime
+source activate qiime1
 align_seqs.py -i cave_otus.fa -o aligned
 grep -c '>' aligned/cave_otus_failures.fasta # check the numbers of non-bacterial sequences
 grep '>' aligned/cave_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > aligned/cave_otus_failures.id
