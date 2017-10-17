@@ -32,10 +32,10 @@ perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*;$/\1OTU_$count/g}' cave_otus.fa
 # remove non-bacterial sequences
 source activate qiime
 align_seqs.py -i cave_otus.fa -o aligned
-grep -c '>' aligned/cave_otus_failures.fasta
+grep -c '>' aligned/cave_otus_failures.fasta # check the numbers of non-bacterial sequences
 grep '>' aligned/cave_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > aligned/cave_otus_failures.id
 filter_fasta.py -f cave_otus.fa -o cave_otus_filtered.fa -s aligned/cave_otus_failures.id -n
-grep '>' -c cave_otus_filtered.fa
+grep '>' -c cave_otus_filtered.fa # check the numbers of tesulting sequences
 
 # taxonomy assignment
 assign_taxonomy.py -i $PWD/cave_otus_filtered.fa -o $PWD/GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
@@ -48,6 +48,9 @@ make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/cave_otus_fil
 # OTU table filteration
 filter_otus_from_otu_table.py --min_count_fraction 0.00001 -i cave_otu_table.biom -o cave_otu_table_filtered.biom
 
+# get final sequences
+filter_fasta.py -f cave_otus.fa -b cave_otu_table_filtered.biom -o cave_final.fa
+
 # summarize OTU table
 biom summarize-table -i cave_otu_table_filtered.biom -o cave_otu_table_summary_filtered.txt
 biom summarize-table -i cave_otu_table_filtered.biom --qualitative -o cave_otu_table_qual_summary_filtered.txt
@@ -58,9 +61,18 @@ single_rarefaction.py -i cave_otu_table_filtered.biom -o cave_otu_table_filtered
 sort_otu_table.py -i cave_otu_table_filtered_even.biom -o cave_otu_table_filtered_even_sorted.biom -m Fasting_Map.txt -s SampleID
 biom convert -i cave_otu_table_filtered_even_sorted.biom -o cave_otu_table_filtered_even_sorted.txt --to-tsv --table-type="OTU table" --header-key=taxonomy
 
-# get final sequences
-filter_fasta.py -f cave_otus.fa -b cave_otu_table_filtered.biom -o cave_final.fa
-
 # make phylogenetic tree
 align_seqs.py -i $PWD/cave_final.fa -o $PWD/pynast_aligned_seqs
-filter_alignment.py -i $PWD/pynast_aligned_seqs/otus_aligned.fasta -o filtered_alignment
+filter_alignment.py -i $PWD/pynast_aligned_seqs/cave_final_aligned.fasta -o filtered_alignment
+make_phylogeny.py -i $PWD/filtered_alignment/cave_final_aligned_pfiltered.fasta -o 16S.tre
+
+# taxa summary
+summarize_taxa_through_plots.py -i cave_otu_table_filtered_even_sorted.biom -o taxa_summary
+
+# alpha diversity
+echo "alpha_diversity:metrics shannon,simpson,PD_whole_tree,goods_coverage,chao1,observed_species" > alpha_params.txt
+alpha_rarefaction.py -i cave_otu_table_filtered_even.biom -o alpha_div -t 16S.tre -m Fasting_Map.txt -p alpha_params.txt -n 100 -e 23510
+alpha_diversity.py -i cave_otu_table_filtered_even.biom -o alpha.txt -t 16S.tre -m shannon,simpson,goods_coverage,chao1,observed_otus,PD_whole_tree
+
+# beta diversity
+beta_diversity.py -i cave_otu_table_filtered_even.biom -o beta -t 16S.tree -m bray_curtis,weighted_unifrac,unweighted_unifrac
