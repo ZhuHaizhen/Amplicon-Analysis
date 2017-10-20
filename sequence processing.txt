@@ -76,3 +76,8 @@ alpha_diversity.py -i cave_otu_table_filtered_even.biom -o alpha.txt -t 16S.tre 
 
 # beta diversity
 beta_diversity.py -i cave_otu_table_filtered_even.biom -o beta -t 16S.tre -m bray_curtis,weighted_unifrac,unweighted_unifrac
+
+# transformatin
+sed 's/#//' Fasting_Map.txt > design.txt
+sed -i 's/^\t//g' beta/*
+sed -i '/# Const/d;s/#OTU //g;s/ID.//g' cave_otu_table_filtered_even_sorted.txt
