@@ -1,0 +1,164 @@
+## R commands for community analysis
+# remove samples with less than 1000 sequences in non_normalised_OTU_table_99_no10tons_nochlormito.txt 
+# create metadata file for each sample in non_normalised_OTU_table_99_no10tons_nochlormito.txt -> env.csv
+
+# in R:
+read.table("env.csv", header=T, row.names=1 ,sep=',') -> env
+read.table("non_normalised_OTU_table_99_no10tons_nochlormito.txt", header=T, row.names=1, sep='\t') -> otu.tmp
+(otu.tmp[,-409]) -> otu.tmp
+
+# centered log ratio (CLR) transformation:
+# from https://github.com/joey711/shiny-phyloseq/blob/master/panels/paneldoc/Transform.md
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0 & !is.na(x)]), na.rm=na.rm) / length(x))
+}
+# from https://github.com/joey711/shiny-phyloseq/blob/master/panels/paneldoc/Transform.md
+clr = function(x, base=2){
+  x <- log((x / gm_mean(x)), base)
+  x[!is.finite(x) | is.na(x)] <- 0.0
+  return(x)
+}
+
+#Run CLR on the OTU count matrix (rows OTUs, cols Samples)
+otu <- t(apply(otu.tmp, MARGIN = 2, FUN = clr))
+# beta diversity analysis:
+library(vegan)
+
+adonis(otu ~ type * soiltype, data=env, method="euclidean")		# runs a PERMANOVA
+rda(otu) -> otu.pca	# runs a principal component analysis
+
+plot(otu.pca, type='n')
+ordispider(otu.pca, env$type, col="#dddddd")
+points(otu.pca, pch=ifelse(env$type=="root",21,24), cex=0.8, bg=env$soiltype)
+legend("bottomleft", legend=unique(factor(env$type)), pch=19, col=unique(factor(env$type)))   # PCA figure
+
+
+#==== community analysis on root and soils separately:
+subset(otu, env$type=="root") -> otu.r
+subset(env, env$type=="root") -> env.r
+subset(otu, env$type=="soil") -> otu.s
+subset(env, env$type=="soil") -> env.s 
+
+# community analysis on soil samples only:
+adonis(otu.s ~ soiltype, data=env.s, method="euclidean", permu=3000)
+rda(otu.s~env.s$soiltype) -> otu.s.rda 		# runs a redundancy analysis (RDA)
+
+plot(otu.s.rda, type='n')
+points(otu.s.rda, pch=24, cex=1, bg=env.s$soiltype)
+legend("bottomleft",legend=unique(factor(env.s$soiltype)),pch=19,col=unique(factor(env.s$soiltype))) 	# plots the RDA
+
+# community analysis on root samples only:
+
+adonis(otu.r ~ soiltype, data=env.r, method="euclidean", permu=3000)
+rda(otu.r) -> otu.r.pca
+
+plot(otu.r.pca, type='n')
+ordispider(otu.r.pca,env.r$soiltype,col="#dddddd")
+points(otu.r.pca, pch=21, cex=1, bg=env.r$soiltype)
+legend("bottomleft",legend=unique(factor(env.r$soiltype)),pch=19,col=unique(factor(env.r$soiltype)))
+
+## relative contributions of soil chemical characteristics and plant phylogeny to community composition:
+# extract index of soil chemical composition:
+scores(rda(decostand(env.s[,27:43],method="standardize")))$sites[,1] -> X1
+scores(rda(decostand(env.s[,27:43],method="standardize")))$sites[,2] -> X2
+scores(rda(decostand(env.r[,27:43],method="standardize")))$sites[,1] -> Y1
+scores(rda(decostand(env.r[,27:43],method="standardize")))$sites[,2] -> Y2
+# extract scores representing host phylogeny:
+read.table("rbcL_distmat.txt",header=T,row.names=1,sep='\t') -> host.dm
+rda(host.dm)->host.dm.pca  ## 81.6% represented by first two axes (PC1 and PC2)
+scores(host.dm.pca)$sites  # copy these scores into env file
+adonis(otu.s ~ X1*X2 + rbcL_distmat_pca_PC1*rbcL_distmat_pca_PC2, data=env.s,method="euc", permu=3000) #for soils
+adonis(otu.r ~ Y1*Y2 + rbcL_distmat_pca_PC1*rbcL_distmat_pca_PC2, data=env.r,method="euc", permu=3000) #for roots
+
+# split values in host.dm to root and soil only distance matrices, then import into R:
+read.table("rbcL_distmat_root.txt",header=T,row.names=1,sep="\t")->host.r.dm
+read.table("rbcL_distmat_soil.txt",header=T,row.names=1,sep="\t")->host.s.dm
+
+# create dm for root and soil communities:
+vegdist(otu,method="euc")->otu.dm
+vegdist(otu.r,method="euc")->otu.r.dm
+vegdist(otu.s,method="euc")->otu.s.dm
+# Procrustes analysis:
+protest(host.r.dm,otu.r.dm,scale=T,permu=3000)
+protest(host.s.dm,otu.s.dm,scale=T,permu=3000)
+# mantel test:
+mantel(host.r.dm,otu.r.dm,method="spearman")	#roots
+mantel(host.s.dm,otu.s.dm,method="spearman")	#soils
+
+## Indicator species analysis using labdsv R package
+# convert input OTU count matrix to relative abundance using total sum scaling
+decostand(otu.tmp, ¡°total¡±, MARGIN=2) -> relabun
+#Filtering for OTUs that have at least >0.5% rel abun in at least one sample
+relabun[,apply(relabun,2,max)>0.005] -> relabun
+library(labdsv)
+relabun[, colSums(abs(relabun)) != 0]->relabun.nozero
+subset(relabun.nozero,env$type=="root")->relabun.nozero.r
+subset(relabun.nozero,env$type=="soil")->relabun.nozero.s
+# run indicator species analysis:
+indval(relabun.nozero,env$type)->indval.rootvssoil
+gr <- indval.rootvssoil$maxcls
+iv <- indval.rootvssoil$indcls
+pv <- indval.rootvssoil$pval
+fr.r <- apply(relabun.nozero.r>0, 2, sum)
+fr.s <- apply(relabun.nozero.s>0, 2, sum)
+avg_relabun.r <- colMeans(relabun.nozero.r)
+avg_relabun.s <- colMeans(relabun.nozero.s)
+indvalsummary <- data.frame(group=gr, indval=iv, pvalue=pv, freq.r=fr.r, freq.s=fr.s, root_avgrelabun=avg_relabun.r, soil_avgrelabun=avg_relabun.s)
+indvalsummary <- indvalsummary[order(indvalsummary$group, -indvalsummary$indval),]
+
+# check p value distribution:
+subset(indvalsummary,indvalsummary$group==1)->tmp   # root samples only
+hist(tmp$pvalue, breaks=20) #if p-value distribution looks good, proceed with P value adjustment
+qv <- p.adjust(tmp$pvalue,method="fdr")
+indvalsummary.r <-data.frame(tmp,fdr=qv)
+
+## indicator species using Welch¡¯s t test in STAMP
+# get list of >0.5% relative abundance OTUs in relabun, name as high_relabun_otus
+otu.tmp[which(rownames(otu.tmp) %in% high_relabun_otus$V1),]->otu.tmp
+otu_high_relabun_CLR <- t(apply(otu.tmp, MARGIN = 2, FUN = clr))
+# output CLR transformed OTU table for input into STAMP
+write.table(t(otu_high_relabun_CLR),file="non_normalised_OTUtable_CLR relabun_pointfivepercOTUs_STAMP.txt", sep = "\t", row.names=T,col.names=T)
+## indicator species using sparse partial least squares discriminant analysis (sPLSDA) in mixOmics R package
+library(mixOmics)
+pca(otu, ncomp=10, logratio='none',) -> otu.pca
+plot(otu.pca)  # barplot of variance explained
+plsda(otu, env$type, ncomp = 3) -> plsda
+perf.plsda <- perf(plsda, validation = 'Mfold', folds = 5, progressBar = TRUE, nrepeat = 50)
+plot(perf.plsda, overlay = 'measure', sd=TRUE)
+plotIndiv(plsda , comp = c(1,2), ind.names = FALSE, ellipse = TRUE, legend = TRUE, title = 'Cooloola Most Diverse, PLSDA comp 1 - 2')
+## pick two components only based on perf.plsda 
+splsda.tune = tune.splsda(otu, env$type, ncomp = 2, logratio = 'none', test.keepX = c(seq(5,150, 5)), validation = 'Mfold', folds = 5, dist = 'max.dist', nrepeat = 50)
+plot(splsda.tune)  # lines indicate that components 1 to 2 are sufficient.
+select.keepX = splsda.tune$choice.keepX[1:2]
+splsda.res <- splsda(otu, env$type, ncomp = 2, keepX = select.keepX)
+
+plotIndiv(splsda.res, comp = c(1,2), ind.names = FALSE, ellipse = TRUE, legend = TRUE, title = 'cooloola data, sPLSDA comp 1 - 2')
+
+splsda.perf = perf(splsda.res, validation = 'Mfold', folds = 5, progressBar = TRUE, nrepeat = 50, cpus = 3)
+splsda.perf$error.rate
+plot(splsda.perf)
+
+head(selectVar(splsda.res, comp = 1)$value) 
+plotLoadings(splsda.res, comp = 1, method = 'mean', contrib = 'max')
+
+selectVar(splsda.res, comp = 1)$value
+
+# get total sum scaled relative abundance values and append to sPLSDA output:
+subset(relabun,env$type=="root") -> relabun.r
+subset(relabun,env$type=="soil") -> relabun.s
+subset(env,env$type=="root")->env.r
+subset(env,env$type=="soil")->env.s
+
+avg_relabun.r <- colMeans(relabun.r)[selectVar(splsda.res, comp = 1)$name]
+avg_relabun.s <- colMeans(relabun.s)[selectVar(splsda.res, comp = 1)$name]
+
+avg_relabun_lycopod <- colMeans((relabun.r)[env.r$clade=="lycopod",])[selectVar(splsda.res, comp = 1)$name]
+avg_relabun_fern <- colMeans((relabun.r)[env.r$clade=="fern",])[selectVar(splsda.res, comp = 1)$name]
+avg_relabun_gymnosperm <- colMeans((relabun.r)[env.r$clade=="gymnosperm",])[selectVar(splsda.res, comp = 1)$name]
+avg_relabun_magnoliid <- colMeans((relabun.r)[env.r$class=="basalangio",])[selectVar(splsda.res, comp = 1)$name]
+avg_relabun_eudicot <- colMeans((relabun.r)[env.r$class=="eudicot",])[selectVar(splsda.res, comp = 1)$name]
+avg_relabun_monocot <- colMeans((relabun.r)[env.r$class=="monocot",])[selectVar(splsda.res, comp = 1)$name]
+
+# to get the relative abundances for each of these indicator OTUs in a single table:
+indic_otus <- data.frame(selectVar(splsda.res, comp = 1)$value,avg_relabun.r,avg_relabun.s,avg_relabun_lycopod,avg_relabun_fern,avg_relabun_gymnosperm,avg_relabun_magnoliid,avg_relabun_eudicot,avg_relabun_monocot)
+write.table(indic_otus, file = "splsda indicator OTUs.txt", sep='\t')
