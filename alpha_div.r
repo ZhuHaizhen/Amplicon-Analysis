@@ -1,6 +1,5 @@
 library(ggplot2)
 library(tidyr)
-library(gridExtra)
 alpha = read.table("alpha_facet.txt", header=T, row.names= 1, sep="\t")
 alpha_facet = gather(alpha,key = diversity, value = indices, -Cave)
 theme_set(theme_bw())
