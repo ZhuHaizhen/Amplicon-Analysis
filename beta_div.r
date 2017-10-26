@@ -1,7 +1,7 @@
 library(vegan)
 library(ggplot2)
 design = read.table("design.txt", header=T, row.names= 1, sep="\t") 
-weighted = read.table("beta/weighted_unifrac_cave_otu_table_filtered_even.txt", sep="\t", header=T, check.names=F)
+weighted = read.table("beta/weighted_unifrac_cave_otu_table_css.txt", sep="\t", header=T, check.names=F)
 idx = rownames(design) %in% colnames(weighted) 
 sub_design = design[idx,]
 weighted = weighted[rownames(sub_design), rownames(sub_design)]
