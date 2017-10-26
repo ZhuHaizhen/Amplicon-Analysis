@@ -75,7 +75,10 @@ alpha_rarefaction.py -i cave_otu_table_filtered_even.biom -o alpha_div -t 16S.tr
 alpha_diversity.py -i cave_otu_table_filtered_even.biom -o alpha.txt -t 16S.tre -m shannon,simpson,goods_coverage,chao1,observed_otus,PD_whole_tree
 
 # beta diversity
-beta_diversity.py -i cave_otu_table_filtered_even.biom -o beta -t 16S.tre -m bray_curtis,weighted_unifrac,unweighted_unifrac
+normalize_table.py -i cave_otu_table_filtered.biom -o cave_otu_table_css.biom -a CSS
+biom convert -i cave_otu_table_css.biom -o cave_otu_table_css.txt --table-type="OTU table" --to-tsv
+sed -i '/# Const/d;s/#OTU //g;s/ID.//g' cave_otu_table_css.txt
+beta_diversity.py -i cave_otu_table_css.biom -o beta -t 16S.tre -m bray_curtis,weighted_unifrac,unweighted_unifrac
 
 # transformatin
 sed 's/#//' Fasting_Map.txt > design.txt
