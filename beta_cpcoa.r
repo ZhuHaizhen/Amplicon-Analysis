@@ -1,7 +1,6 @@
 library(vegan)
 library(ggplot2)
 library(gridExtra)
-library()
 variability_table = function(cca){
   chi = c(cca$tot.chi, cca$CCA$tot.chi, cca$CA$tot.chi)
   variability_table = cbind(chi, chi/chi[1])
