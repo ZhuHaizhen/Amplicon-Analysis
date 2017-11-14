@@ -7,35 +7,6 @@ weighted <- read.table("beta/weighted_unifrac_cave_otu_table_css.txt", sep="\t",
 unweighted <- read.table("beta/unweighted_unifrac_cave_otu_table_css.txt", sep="\t", header=T, check.names=F)
 bray <- read.table("beta/bray_curtis_cave_otu_table_css.txt", sep="\t", header=T, check.names=F)
 
-pcoa.aw <- cmdscale(weighted, k=3, eig=T)
-points.aw <- as.data.frame(pcoa.aw$points)
-colnames(points.aw) <- c("x", "y", "z") 
-eig.aw <- pcoa.aw$eig
-points.aw <- cbind(points.aw, design[match(rownames(points.aw), rownames(design)), ])
-p6 <- ggplot(points.aw,aes(x = x,y = y, color = cave, shape = sample_type)) + theme_bw() + geom_point(alpha = 0.9, size = 3) + labs(x=paste("PCoA 1 (", format(100 * eig.aw[1] / sum(eig.aw), digits=4), "%)", sep=""), y=paste("PCoA 2 (", format(100 * eig.aw[2] / sum(eig.aw), digits=4), "%)", sep=""),title = "PCoA plot of weighted unifrac distance")
-
-pcoa.au <- cmdscale(unweighted, k=3, eig=T)
-points.au <- as.data.frame(pcoa.au$points)
-colnames(points.au) <- c("x", "y", "z") 
-eig.au <- pcoa.au$eig
-points.au <- cbind(points.au, design[match(rownames(points.au), rownames(design)), ])
-p7 <- ggplot(points.au,aes(x = x,y = y, color = cave, shape = sample_type)) + theme_bw() + geom_point(alpha = 0.9, size = 3) + labs(x=paste("PCoA 1 (", format(100 * eig.au[1] / sum(eig.au), digits=4), "%)", sep=""), y=paste("PCoA 2 (", format(100 * eig.au[2] / sum(eig.au), digits=4), "%)", sep=""),title = "PCoA plot of unweighted unifrac distance")
-
-pcoa.ab <- cmdscale(bray, k=3, eig=T)
-points.ab <- as.data.frame(pcoa.ab$points)
-colnames(points.ab) <- c("x", "y", "z") 
-eig.ab <- pcoa.ab$eig
-points.ab <- cbind(points.ab, design[match(rownames(points.ab), rownames(design)), ])
-p8 <- ggplot(points.ab,aes(x = x,y = y, color = cave, shape = sample_type)) + theme_bw() + geom_point(alpha = 0.9, size = 3) + labs(x=paste("PCoA 1 (", format(100 * eig.ab[1] / sum(eig.ab), digits=4), "%)", sep=""), y=paste("PCoA 2 (", format(100 * eig.ab[2] / sum(eig.ab), digits=4), "%)", sep=""),title = "PCoA plot of bray curtis distance")
-
-dis_tbl <- as.dist(bray,diag = FALSE,upper = FALSE)
-adonis_tbl <- adonis(dis_tbl~status,data = design,permutations = 999)
-adonis_p.val <- adonis_tbl$aov.tab$`Pr(>F)`[1]
-adonis_p.val  #p-value = 0.918
-
-p.all <- grid.arrange(p7,p6,nrow = 1)
-ggsave(p.all,filename = "beta_other.pdf",width = 10,height = 8)
-
 design.in <- subset(design,status == "in")
 idx.cw <- colnames(weighted)%in%rownames(design.in)
 idx.rw <- rownames(weighted)%in%rownames(design.in)
@@ -104,3 +75,32 @@ p5 <- ggplot(points.cave, aes(x=x, y=y, color=cave)) + theme_bw() + geom_point(a
 
 p.in <- grid.arrange(p2,p1,p5,p4,nrow = 2)
 ggsave(p.in,filename = "beta_in.pdf",width = 10,height = 8)
+
+pcoa.aw <- cmdscale(weighted, k=3, eig=T)
+points.aw <- as.data.frame(pcoa.aw$points)
+colnames(points.aw) <- c("x", "y", "z") 
+eig.aw <- pcoa.aw$eig
+points.aw <- cbind(points.aw, design[match(rownames(points.aw), rownames(design)), ])
+p6 <- ggplot(points.aw,aes(x = x,y = y, color = status, shape = sample_type)) + theme_bw() + geom_point(alpha = 0.9, size = 3) + labs(x=paste("PCoA 1 (", format(100 * eig.aw[1] / sum(eig.aw), digits=4), "%)", sep=""), y=paste("PCoA 2 (", format(100 * eig.aw[2] / sum(eig.aw), digits=4), "%)", sep=""),title = "PCoA plot of weighted unifrac distance") + scale_color_manual(values = c("lightgoldenrod2","orchid"))
+
+pcoa.au <- cmdscale(unweighted, k=3, eig=T)
+points.au <- as.data.frame(pcoa.au$points)
+colnames(points.au) <- c("x", "y", "z") 
+eig.au <- pcoa.au$eig
+points.au <- cbind(points.au, design[match(rownames(points.au), rownames(design)), ])
+p7 <- ggplot(points.au,aes(x = x,y = y, color = status, shape = sample_type)) + theme_bw() + geom_point(alpha = 0.9, size = 3) + labs(x=paste("PCoA 1 (", format(100 * eig.au[1] / sum(eig.au), digits=4), "%)", sep=""), y=paste("PCoA 2 (", format(100 * eig.au[2] / sum(eig.au), digits=4), "%)", sep=""),title = "PCoA plot of unweighted unifrac distance") + scale_color_manual(values = c("lightgoldenrod2","orchid"))
+
+pcoa.ab <- cmdscale(bray, k=3, eig=T)
+points.ab <- as.data.frame(pcoa.ab$points)
+colnames(points.ab) <- c("x", "y", "z") 
+eig.ab <- pcoa.ab$eig
+points.ab <- cbind(points.ab, design[match(rownames(points.ab), rownames(design)), ])
+p8 <- ggplot(points.ab,aes(x = x,y = y, color = status, shape = sample_type)) + theme_bw() + geom_point(alpha = 0.9, size = 3) + labs(x=paste("PCoA 1 (", format(100 * eig.ab[1] / sum(eig.ab), digits=4), "%)", sep=""), y=paste("PCoA 2 (", format(100 * eig.ab[2] / sum(eig.ab), digits=4), "%)", sep=""),title = "PCoA plot of bray curtis distance") + scale_color_manual(values = c("lightgoldenrod2","orchid"))
+
+dis_tbl <- as.dist(bray,diag = FALSE,upper = FALSE)
+adonis_tbl <- adonis(dis_tbl~status,data = design,permutations = 999)
+adonis_p.val <- adonis_tbl$aov.tab$`Pr(>F)`[1]
+adonis_p.val  #p-value = 0.918
+
+p.all <- grid.arrange(p7,p6,nrow = 1)
+ggsave(p.all,filename = "beta_other.pdf",width = 10,height = 4)
