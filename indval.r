@@ -1,6 +1,6 @@
 library(indicspecies)
 vignette("indicspeciesTutorial", package="indicspecies")
-ind <- read.table("cave_indval.txt",fill = TRUE,header = TRUE,row.names = 1,check.names = FALSE)
+ind <- read.table("cave.in_indval.txt",fill = TRUE,header = TRUE,row.names = 1,check.names = FALSE)
 ind.mat <- as.matrix(ind)
 
 library(vegetarian)
