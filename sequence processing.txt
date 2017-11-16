@@ -35,7 +35,7 @@ align_seqs.py -i cave_otus.fa -o aligned
 grep -c '>' aligned/cave_otus_failures.fasta # check the numbers of non-bacterial sequences
 grep '>' aligned/cave_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > aligned/cave_otus_failures.id
 filter_fasta.py -f cave_otus.fa -o cave_otus_filtered.fa -s aligned/cave_otus_failures.id -n
-grep '>' -c cave_otus_filtered.fa # check the numbers of tesulting sequences
+grep '>' -c cave_otus_filtered.fa # check the number of the resulting sequences
 
 # taxonomy assignment
 assign_taxonomy.py -i $PWD/cave_otus_filtered.fa -o $PWD/GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
