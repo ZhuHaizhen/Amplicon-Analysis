@@ -6,81 +6,141 @@ perl -i.bak -pe 'if ($.%4==1){$count++;s/(^\@).*/$1C1A01_$count/}' C1A01.assembl
 
 # merge all sequences into one file
 cat *.assembled.fastq > cave.fastq
+cat ./cave.in/*.assembled.fastq > cave.in.fastq
 
 # quality control
 usearch7.0 -fastq_filter cave.fastq -fastq_maxee 0.5 -fastaout cave.fasta
+usearch7.0 -fastq_filter cave.in.fastq -fastq_maxee 0.5 -fastaout cave.in.fasta
 
 # rename for Uparse
-perl /data/share/scripts/bmp-Qiime2Uparse.pl -i $PWD/cave.fasta -o cave_uparse.fa
+perl /data/share/scripts/bmp-Qiime2Uparse.pl -i cave.fasta -o cave_uparse.fa
+perl /data/share/scripts/bmp-Qiime2Uparse.pl -i cave.in.fasta -o cave.in_uparse.fa
 
 # derep
-usearch7.0 -derep_fulllength $PWD/cave_uparse.fa -output cave_derep.fa -sizeout
+usearch7.0 -derep_fulllength cave_uparse.fa -output cave_derep.fa -sizeout
+usearch7.0 -derep_fulllength cave.in_uparse.fa -output cave.in_derep.fa -sizeout
 
 # remove singletons
 usearch7.0 -sortbysize cave_derep.fa -output cave_sorted.fa -minsize 2
+usearch7.0 -sortbysize cave.in_derep.fa -output cave.in_sorted.fa -minsize 2
 
 # OTU cluster
 usearch7.0 -cluster_size cave_sorted.fa -consout cave_otus1.fa -id 0.97 -relabel OTU_ -sizeout
+usearch7.0 -cluster_size cave.in_sorted.fa -consout cave.in_otus1.fa -id 0.97 -relabel OTU_ -sizeout
 
 # remove chimeras
 usearch7.0 -uchime_ref cave_otus1.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave_otus2.fa
+usearch7.0 -uchime_ref cave.in_otus1.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave.in_otus2.fa
 
 # transformation
 perl /data/share/scripts/multiple-line-to-single-line.pl cave_otus2.fa cave_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave.in_otus2.fa cave.in_otus.fa
+
 perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*;$/\1OTU_$count/g}' cave_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*;$/\1OTU_$count/g}' cave.in_otus.fa
 
 # remove non-bacterial sequences
 source activate qiime1
-align_seqs.py -i cave_otus.fa -o aligned
-grep -c '>' aligned/cave_otus_failures.fasta # check the numbers of non-bacterial sequences
-grep '>' aligned/cave_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > aligned/cave_otus_failures.id
-filter_fasta.py -f cave_otus.fa -o cave_otus_filtered.fa -s aligned/cave_otus_failures.id -n
-grep '>' -c cave_otus_filtered.fa # check the number of the resulting sequences
 
+align_seqs.py -i cave_otus.fa -o aligned
+align_seqs.py -i cave.in_otus.fa -o in.aligned
+
+grep -c '>' aligned/cave_otus_failures.fasta # check the numbers of non-bacterial sequences
+grep -c '>' in.aligned/cave.in_otus_failures.fasta  #272
+
+grep '>' aligned/cave_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > aligned/cave_otus_failures.id
+grep '>' in.aligned/cave.in_otus_failures.fasta|cut -f 1 -d ' '|sed 's/>//g' > in.aligned/cave.in_otus_failures.id
+
+filter_fasta.py -f cave_otus.fa -o cave_otus_filtered.fa -s aligned/cave_otus_failures.id -n
+filter_fasta.py -f cave.in_otus.fa -o cave.in_otus_filtered.fa -s in.aligned/cave.in_otus_failures.id -n
+
+grep '>' -c cave_otus_filtered.fa # check the number of the resulting sequences
+grep '>' -c cave.in_otus_filtered.fa  #29019
+ 
 # taxonomy assignment
-assign_taxonomy.py -i $PWD/cave_otus_filtered.fa -o $PWD/GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
+assign_taxonomy.py -i cave_otus_filtered.fa -o GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
+
+assign_taxonomy.py -i cave.in_otus_filtered.fa -o in.GG_assigned_taxonomy -r /data/share/database/gg/gg_13_8_otus/rep_set/97_otus.fasta -t /data/share/database/gg/gg_13_8_otus/taxonomy/97_otu_taxonomy.txt
 
 # make OTU table
 usearch7.0 -usearch_global cave_uparse.fa -db cave_otus_filtered.fa -strand plus -id 0.97 -uc map.uc
+usearch7.0 -usearch_global cave.in_uparse.fa -db cave.in_otus_filtered.fa -strand plus -id 0.97 -uc in.map.uc
+
 python /data/share/scripts/map2qiime.py map.uc > otu_map.txt
-make_otu_table.py -i $PWD/otu_map.txt -t $PWD/GG_assigned_taxonomy/cave_otus_filtered_tax_assignments.txt -o cave_otu_table.biom
+python /data/share/scripts/map2qiime.py in.map.uc > in.otu_map.txt
+
+make_otu_table.py -i otu_map.txt -t GG_assigned_taxonomy/cave_otus_filtered_tax_assignments.txt -o cave_otu_table.biom
+make_otu_table.py -i in.otu_map.txt -t in.GG_assigned_taxonomy/cave.in_otus_filtered_tax_assignments.txt -o cave.in_otu_table.biom
 
 # OTU table filteration
 filter_otus_from_otu_table.py --min_count_fraction 0.00001 -i cave_otu_table.biom -o cave_otu_table_filtered.biom
+filter_otus_from_otu_table.py --min_count_fraction 0.00001 -i cave.in_otu_table.biom -o cave.in_otu_table_filtered.biom
 
 # get final sequences
 filter_fasta.py -f cave_otus.fa -b cave_otu_table_filtered.biom -o cave_final.fa
+filter_fasta.py -f cave.in_otus.fa -b cave.in_otu_table_filtered.biom -o cave.in_final.fa
 
 # summarize OTU table
 biom summarize-table -i cave_otu_table_filtered.biom -o cave_otu_table_summary_filtered.txt
+biom summarize-table -i cave.in_otu_table_filtered.biom -o cave.in_otu_table_summary_filtered.txt
+
 biom summarize-table -i cave_otu_table_filtered.biom --qualitative -o cave_otu_table_qual_summary_filtered.txt
+biom summarize-table -i cave.in_otu_table_filtered.biom --qualitative -o cave.in_otu_table_qual_summary_filtered.txt
 
 # rarefaction and sorting
 biom summarize-table -i cave_otu_table_filtered.biom -o cave_otu_table_filtered.info
+biom summarize-table -i cave.in_otu_table_filtered.biom -o cave.in_otu_table_filtered.info
+
 single_rarefaction.py -i cave_otu_table_filtered.biom -o cave_otu_table_filtered_even.biom -d 23510
+single_rarefaction.py -i cave.in_otu_table_filtered.biom -o cave.in_otu_table_filtered_even.biom -d 24107
+
 sort_otu_table.py -i cave_otu_table_filtered_even.biom -o cave_otu_table_filtered_even_sorted.biom -m Fasting_Map.txt -s SampleID
+sort_otu_table.py -i cave.in_otu_table_filtered_even.biom -o cave.in_otu_table_filtered_even_sorted.biom -m in.Fasting_Map.txt -s SampleID
+
 biom convert -i cave_otu_table_filtered_even_sorted.biom -o cave_otu_table_filtered_even_sorted.txt --to-tsv --table-type="OTU table" --header-key=taxonomy
+biom convert -i cave.in_otu_table_filtered_even_sorted.biom -o cave.in_otu_table_filtered_even_sorted.txt --to-tsv --table-type="OTU table" --header-key=taxonomy
 
 # make phylogenetic tree
-align_seqs.py -i $PWD/cave_final.fa -o $PWD/pynast_aligned_seqs
-filter_alignment.py -i $PWD/pynast_aligned_seqs/cave_final_aligned.fasta -o filtered_alignment
-make_phylogeny.py -i $PWD/filtered_alignment/cave_final_aligned_pfiltered.fasta -o 16S.tre
+align_seqs.py -i cave_final.fa -o pynast_aligned_seqs
+align_seqs.py -i cave.in_final.fa -o in.pynast_aligned_seqs
+
+filter_alignment.py -i pynast_aligned_seqs/cave_final_aligned.fasta -o filtered_alignment
+filter_alignment.py -i in.pynast_aligned_seqs/cave.in_final_aligned.fasta -o in.filtered_alignment
+
+make_phylogeny.py -i filtered_alignment/cave_final_aligned_pfiltered.fasta -o 16S.tre
+make_phylogeny.py -i in.filtered_alignment/cave.in_final_aligned_pfiltered.fasta -o in.16S.tre
 
 # taxa summary
 summarize_taxa_through_plots.py -i cave_otu_table_filtered_even_sorted.biom -o taxa_summary
+summarize_taxa_through_plots.py -i cave.in_otu_table_filtered_even_sorted.biom -o in.taxa_summary
 
 # alpha diversity
 echo "alpha_diversity:metrics shannon,simpson,PD_whole_tree,goods_coverage,chao1,observed_species" > alpha_params.txt
+
 alpha_rarefaction.py -i cave_otu_table_filtered_even.biom -o alpha_div -t 16S.tre -m Fasting_Map.txt -p alpha_params.txt -n 100 -e 23510
+
 alpha_diversity.py -i cave_otu_table_filtered_even.biom -o alpha.txt -t 16S.tre -m shannon,simpson,goods_coverage,chao1,observed_otus,PD_whole_tree
+alpha_diversity.py -i cave.in_otu_table_filtered_even.biom -o in.alpha.txt -t in.16S.tre -m shannon,simpson,goods_coverage,chao1,observed_otus,PD_whole_tree
 
 # beta diversity
 normalize_table.py -i cave_otu_table_filtered.biom -o cave_otu_table_css.biom -a CSS
+normalize_table.py -i cave.in_otu_table_filtered.biom -o cave.in_otu_table_css.biom -a CSS
+
 biom convert -i cave_otu_table_css.biom -o cave_otu_table_css.txt --table-type="OTU table" --to-tsv
+biom convert -i cave.in_otu_table_css.biom -o cave.in_otu_table_css.txt --table-type="OTU table" --to-tsv
+
 sed -i '/# Const/d;s/#OTU //g;s/ID.//g' cave_otu_table_css.txt
+sed -i '/# Const/d;s/#OTU //g;s/ID.//g' cave.in_otu_table_css.txt
+
 beta_diversity.py -i cave_otu_table_css.biom -o beta -t 16S.tre -m bray_curtis,weighted_unifrac,unweighted_unifrac
+beta_diversity.py -i cave.in_otu_table_css.biom -o in.beta -t in.16S.tre -m bray_curtis,weighted_unifrac,unweighted_unifrac
 
 # transformation
 sed 's/#//' Fasting_Map.txt > design.txt
+sed 's/#//' in.Fasting_Map.txt > design.in.txt
+
 sed -i 's/^\t//g' beta/*
+sed -i 's/^\t//g' in.beta/*
+
 sed -i '/# Const/d;s/#OTU //g;s/ID.//g' cave_otu_table_filtered_even_sorted.txt
+sed -i '/# Const/d;s/#OTU //g;s/ID.//g' cave.in_otu_table_filtered_even_sorted.txt
