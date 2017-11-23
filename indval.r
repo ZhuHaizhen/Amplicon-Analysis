@@ -9,6 +9,17 @@ bind.rel <- cbind(ind.rel,ind[,0])
 f <- ind[0,]
 colnames(bind.rel) = colnames(f)
 
+ind.a <- read.table("cave_indval.txt",fill = TRUE,header = TRUE,row.names = 1,check.names = FALSE)
+
+ind.rel.a <- normalize.rows(ind.a)
+bind.rel.a <- cbind(ind.rel.a,ind.a[,0])
+f.a <- ind.a[0,]
+colnames(bind.rel.a) = colnames(f.a)
+
+grp.stat <- c(rep(1,21),rep(2,128))
+indval.stat <- multipatt(bind.rel.a,grp.stat,func = "IndVal",duleg = TRUE,control = how(nperm = 999))
+summary(indval.stat,indvalcomp = TRUE)
+
 grp.cave <- c(rep(1,21),rep(2,18),rep(3,16),rep(4,14),rep(5,17),rep(6,14),rep(7,18),rep(8,10))
 indval.cave <- multipatt(bind.rel,grp.cave,func = "IndVal",duleg = TRUE,control = how(nperm = 999))
 summary(indval.cave,indvalcomp = TRUE)
