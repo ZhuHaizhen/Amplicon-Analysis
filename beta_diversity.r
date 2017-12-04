@@ -62,8 +62,8 @@ variability_table = function(cca){
   return(variability_table)
 }
 
-capscale.samp <- capscale(unweighted.in ~ sample_type, data=design.in, add=F, sqrt.dist=F)
-perm_anova.samp <- anova.cca(capscale.samp)
+capscale.samp <- capscale(bray.in ~ sample_type, data=design.in, add=F, sqrt.dist=F)
+perm_anova.samp <- anova.cca(capscale.samp,permutations = how(nperm = 999))
 var_tbl.samp <- variability_table(capscale.samp)
 eig.samp <- capscale.samp$CCA$eig
 variance.samp <- var_tbl.samp["constrained", "proportion"]
@@ -74,8 +74,8 @@ colnames(points.samp) = c("x", "y")
 points.samp <- cbind(points.samp, design.in[match(rownames(points.samp), rownames(design.in)),])
 p7 <- ggplot(points.samp, aes(x=x, y=y, color=cave, shape=sample_type)) + theme_bw() + geom_point(alpha = 0.8,size=3) + labs(x=paste("CPCoA 1 (", format(100 * eig.samp[1] / sum(eig.samp), digits=4), "%)", sep=""),y=paste("CPCoA 2 (", format(100 * eig.samp[2] / sum(eig.samp), digits=4), "%)", sep="")) + ggtitle(paste(format(100 * variance.samp, digits=3), " % of variance; p=",format(p.val.samp, digits=2),sep="")) + scale_color_brewer(palette = "Paired")
 
-capscale.cave <- capscale(unweighted.in ~ cave, data=design.in, add=F, sqrt.dist=F)
-perm_anova.cave <- anova.cca(capscale.cave)
+capscale.cave <- capscale(bray.in ~ cave, data=design.in, add=F, sqrt.dist=F)
+perm_anova.cave <- anova.cca(capscale.cave,permutations = how(nperm = 999))
 var_tbl.cave <- variability_table(capscale.cave)
 eig.cave <- capscale.cave$CCA$eig
 variance.cave <- var_tbl.cave["constrained", "proportion"]
