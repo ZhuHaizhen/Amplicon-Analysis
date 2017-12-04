@@ -62,7 +62,7 @@ variability_table = function(cca){
   return(variability_table)
 }
 
-capscale.samp <- capscale(bray.in ~ sample_type, data=design.in, add=F, sqrt.dist=F)
+capscale.samp <- capscale(unweighted.in ~ sample_type, data=design.in, add=F, sqrt.dist=F)
 perm_anova.samp <- anova.cca(capscale.samp,permutations = how(nperm = 999))
 var_tbl.samp <- variability_table(capscale.samp)
 eig.samp <- capscale.samp$CCA$eig
@@ -74,7 +74,7 @@ colnames(points.samp) = c("x", "y")
 points.samp <- cbind(points.samp, design.in[match(rownames(points.samp), rownames(design.in)),])
 p7 <- ggplot(points.samp, aes(x=x, y=y, color=cave, shape=sample_type)) + theme_bw() + geom_point(alpha = 0.8,size=3) + labs(x=paste("CPCoA 1 (", format(100 * eig.samp[1] / sum(eig.samp), digits=4), "%)", sep=""),y=paste("CPCoA 2 (", format(100 * eig.samp[2] / sum(eig.samp), digits=4), "%)", sep="")) + ggtitle(paste(format(100 * variance.samp, digits=3), " % of variance; p=",format(p.val.samp, digits=2),sep="")) + scale_color_brewer(palette = "Paired")
 
-capscale.cave <- capscale(bray.in ~ cave, data=design.in, add=F, sqrt.dist=F)
+capscale.cave <- capscale(unweighted.in ~ cave, data=design.in, add=F, sqrt.dist=F)
 perm_anova.cave <- anova.cca(capscale.cave,permutations = how(nperm = 999))
 var_tbl.cave <- variability_table(capscale.cave)
 eig.cave <- capscale.cave$CCA$eig
@@ -86,7 +86,7 @@ colnames(points.cave) <- c("x", "y")
 points.cave <- cbind(points.cave, design.in[match(rownames(points.cave), rownames(design.in)),])
 p8 <- ggplot(points.cave, aes(x=x, y=y, color=cave, shape=sample_type)) + theme_bw() + geom_point(alpha = 0.8,size = 3) + labs(x=paste("CPCoA 1 (", format(100 * eig.cave[1] / sum(eig.cave), digits=4), "%)", sep=""),y=paste("CPCoA 2 (", format(100 * eig.cave[2] / sum(eig.cave), digits=4), "%)", sep="")) + ggtitle(paste(format(100 * variance.cave, digits=3), " % of variance; p=",format(p.val.cave, digits=2),sep="")) + scale_color_brewer(palette = "Paired")
 
-p <- grid.arrange(p6,p8,nrow=1)
-pp <- grid.arrange(p4,p5,p3,p7,nrow=2)
+p <- grid.arrange(p5,p8,nrow=1)
+pp <- grid.arrange(p4,p6,p3,p7,nrow=2)
 ggsave(p,filename = "beta.pdf",width = 10,height = 4)
 ggsave(pp,filename = "beta_other.pdf",width = 10,height = 8)
