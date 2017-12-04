@@ -42,8 +42,8 @@ metagenome_contributions.py -i normalized.biom -l K01776,K01925,K22210,K01425,K0
 
 humann2_split_table --input Predict_Metagenome.biom --output humann_input
 
-humann2 --input humann_input/in.biom --output humann_output --pathways-database /zhuhz/results/zhuhz/software/humann-0.99/data/keggc
-humann2 --input humann_input/out.biom --output humann_output --pathways-database /zhuhz/results/zhuhz/software/humann-0.99/data/keggc
+humann2 --input humann_input/in.biom --output humann_output --pathways-database /home/zhuhz/results/zhuhz/software/humann-0.99/data/keggc
+humann2 --input humann_input/out.biom --output humann_output --pathways-database /home/zhuhz/results/zhuhz/software/humann-0.99/data/keggc
 
 humann2_join_tables --input humann_output --output humann2_pathcoverage.tsv --file_name pathcoverage
 
@@ -83,6 +83,10 @@ perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1water_$count/}' water_otus.fa
 
 cat air_otus.fa rock_otus.fa soil_otus.fa water_otus.fa > cave.in.fa
 
+echo "pick_otus:enable_rev_strand_match True" >> $PWD/otu_picking_params_97.txt
+
+echo "pick_otus:similarity0.97" >> $PWD/otu_picking_params_97.txt
+
 pick_closed_reference_otus.py -i cave.in.fa -o otu_taxonomy -p otu_picking_params_97.txt -t /data/huangye/16s/PICRUSt/gg_13_5_otus/taxonomy/97_otu_taxonomy.txt -r /data/huangye/16s/PICRUSt/gg_13_5_otus/rep_set/97_otus.fasta -a -O 4
 
 biom summarize-table -i otu_taxonomy/otu_table.biom -o otu_table.info
@@ -95,15 +99,98 @@ biom convert -i Predict_Metagenome.in.biom -o Predict_Metagenome.in.txt --to-tsv
 
 categorize_by_function.py -f -i Predict_Metagenome.in.biom -c KEGG_Pathways -l 3 -o Pathway_L3.in.txt
 
+metagenome_contributions.py -i normalized.in.biom -t ko -o ko_contributions.in.tab
+
+# Biosynthesis of ansamycins
+metagenome_contributions.py -i normalized.in.biom -l K16015£¬K16016£¬K16017£¬K16018£¬K16019£¬K16020£¬K16021£¬K15670£¬K15671£¬K15672£¬K15673£¬K16022£¬K15466£¬K10623£¬K15467£¬K16024£¬K16025£¬K16026£¬K16027£¬K16028£¬K16029£¬K16030£¬K16031£¬K16032£¬K16033£¬K16034£¬K16035£¬K16036£¬K16037£¬K16038£¬K16039 -t ko -o ko01051_contributions.in.tab
+# Biosynthesis of vancomycin group antibiotics
+metagenome_contributions.py -i normalized.in.biom -l K16421,K16422,K16423,K16424,K16425,K16426,K16427,K16428,K16429,K16430,K16431,K16432,K16433,K16434,K01710,K16535,K16436,K16437,K16438,K16439,K18836,K16440,K16442,K16443,K16444,K16445,K16446,K16447,K16448 -t ko -o ko01055_contributions.in.tab
 
 humann2_split_table --input Predict_Metagenome.in.biom --output humann_input.in
 
-humann2 --input humann_input.in/air.biom --output humann_output.in --pathways-database /zhuhz/results/zhuhz/software/humann-0.99/data/keggc
-humann2 --input humann_input.in/rock.biom --output humann_output.in --pathways-database /zhuhz/results/zhuhz/software/humann-0.99/data/keggc
-humann2 --input humann_input.in/soil.biom --output humann_output.in --pathways-database /zhuhz/results/zhuhz/software/humann-0.99/data/keggc
-humann2 --input humann_input.in/water.biom --output humann_output.in --pathways-database /zhuhz/results/zhuhz/software/humann-0.99/data/keggc
+humann2 --input humann_input.in/air.biom --output humann_output.in --pathways-database /home/zhuhz/results/zhuhz/software/humann-0.99/data/keggc
+humann2 --input humann_input.in/rock.biom --output humann_output.in --pathways-database /home/zhuhz/results/zhuhz/software/humann-0.99/data/keggc
+humann2 --input humann_input.in/soil.biom --output humann_output.in --pathways-database /home/zhuhz/results/zhuhz/software/humann-0.99/data/keggc
+humann2 --input humann_input.in/water.biom --output humann_output.in --pathways-database /home/zhuhz/results/zhuhz/software/humann-0.99/data/keggc
 
 humann2_join_tables --input humann_output.in --output humann2_pathcoverage.in.tsv --file_name pathcoverage
 
 humann2_join_tables --input humann_output.in --output humann2_pathabundance.in.tsv --file_name pathabundance
 
+
+
+cat C1*.fastq > cave1.fastq
+cat C2*.fastq > cave2.fastq
+cat G1*.fastq > cave3.fastq
+cat G3*.fastq > cave4.fastq
+cat S7*.fastq > cave5.fastq
+cat S8*.fastq > cave6.fastq
+cat Y2*.fastq > cave7.fastq
+cat Y3*.fastq > cave8.fastq
+
+vsearch -fastq_filter cave1.fastq -fastq_maxee 0.5 -fastaout cave1.fasta
+vsearch -fastq_filter cave2.fastq -fastq_maxee 0.5 -fastaout cave2.fasta
+vsearch -fastq_filter cave3.fastq -fastq_maxee 0.5 -fastaout cave3.fasta
+vsearch -fastq_filter cave4.fastq -fastq_maxee 0.5 -fastaout cave4.fasta
+vsearch -fastq_filter cave5.fastq -fastq_maxee 0.5 -fastaout cave5.fasta
+vsearch -fastq_filter cave6.fastq -fastq_maxee 0.5 -fastaout cave6.fasta
+vsearch -fastq_filter cave7.fastq -fastq_maxee 0.5 -fastaout cave7.fasta
+vsearch -fastq_filter cave8.fastq -fastq_maxee 0.5 -fastaout cave8.fasta
+
+vsearch -derep_fulllength cave1.fasta -output cave1_derep.fa
+vsearch -derep_fulllength cave2.fasta -output cave2_derep.fa
+vsearch -derep_fulllength cave3.fasta -output cave3_derep.fa
+vsearch -derep_fulllength cave4.fasta -output cave4_derep.fa
+vsearch -derep_fulllength cave5.fasta -output cave5_derep.fa
+vsearch -derep_fulllength cave6.fasta -output cave6_derep.fa
+vsearch -derep_fulllength cave7.fasta -output cave7_derep.fa
+vsearch -derep_fulllength cave8.fasta -output cave8_derep.fa
+
+vsearch -uchime_ref cave1_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave1_unchime.fa
+vsearch -uchime_ref cave2_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave2_unchime.fa
+vsearch -uchime_ref cave3_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave3_unchime.fa
+vsearch -uchime_ref cave4_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave4_unchime.fa
+vsearch -uchime_ref cave5_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave5_unchime.fa
+vsearch -uchime_ref cave6_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave6_unchime.fa
+vsearch -uchime_ref cave7_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave7_unchime.fa
+vsearch -uchime_ref cave8_derep.fa -db /data/share/scripts/gold.fa -strand plus -nonchimeras cave8_unchime.fa
+
+perl /data/share/scripts/multiple-line-to-single-line.pl cave1_unchime.fa cave1_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave2_unchime.fa cave2_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave3_unchime.fa cave3_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave4_unchime.fa cave4_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave5_unchime.fa cave5_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave6_unchime.fa cave6_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave7_unchime.fa cave7_otus.fa
+perl /data/share/scripts/multiple-line-to-single-line.pl cave8_unchime.fa cave8_otus.fa
+
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave1_$count/}' cave1_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave2_$count/}' cave2_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave3_$count/}' cave3_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave4_$count/}' cave4_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave5_$count/}' cave5_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave6_$count/}' cave6_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave7_$count/}' cave7_otus.fa
+perl -i.bak -pe 'if ($.%2==1){$count++;s/(^>).*/$1cave8_$count/}' cave8_otus.fa
+
+cat cave*_otus.fa > cave.in.fa
+
+echo "pick_otus:enable_rev_strand_match True" >> $PWD/otu_picking_params_97.txt
+
+echo "pick_otus:similarity0.97" >> $PWD/otu_picking_params_97.txt
+
+pick_closed_reference_otus.py -i cave.in.fa -o otu_taxonomy -p otu_picking_params_97.txt -t /data/huangye/16s/PICRUSt/gg_13_5_otus/taxonomy/97_otu_taxonomy.txt -r /data/huangye/16s/PICRUSt/gg_13_5_otus/rep_set/97_otus.fasta -a -O 4
+
+biom summarize-table -i otu_taxonomy/otu_table.biom -o otu_table.info
+
+normalize_by_copy_number.py -i otu_taxonomy/otu_table.biom -o normalized.in.biom
+
+predict_metagenomes.py -i normalized.in.biom -o Predict_Metagenome.in.biom
+
+biom convert -i Predict_Metagenome.in.biom -o Predict_Metagenome.in.tsv --to-tsv
+
+categorize_by_function.py -f -i Predict_Metagenome.in.biom -c KEGG_Pathways -l 3 -o Pathway_L3.in.txt
+
+metagenome_contributions.py -i normalized.in.biom -t ko -o ko_contributions.in.tab
+
+#

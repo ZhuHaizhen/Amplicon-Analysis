@@ -1,0 +1,17 @@
+# Compute correlations
+python ../software/sparcc-05f4d3f31d77/SparCC.py in.sparcc.txt -i 10 --cor_file=in.sparcc.cor.txt > sparcc.log
+
+# Compute bootstraps
+python ../software/sparcc-05f4d3f31d77/MakeBootstraps.py in.sparcc.txt -n 100 -t boot_#.txt -p Resamplings/
+
+# Compute correlations based on bootstraps, method in default is SparCC, pearson, spearman and kendall are also supported
+mkdir Bootstraps
+for i in `seq 0 99`
+do
+python ../software/sparcc-05f4d3f31d77/SparCC.py Resamplings/boot_$i.txt -i 10 -a SparCC --cor_file=Bootstraps/sim_cor_$i.txt >> sparcc.log
+done
+
+# Compute p-values
+python ../software/sparcc-05f4d3f31d77/PseudoPvals.py in.sparcc.cor.txt Bootstraps/sim_cor_#.txt 10 -o sparcc_pvals_two_sided.txt -t 'two_sided'  >> sparcc.log
+
+
