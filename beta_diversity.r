@@ -87,6 +87,6 @@ points.cave <- cbind(points.cave, design.in[match(rownames(points.cave), rowname
 p8 <- ggplot(points.cave, aes(x=x, y=y, color=cave, shape=sample_type)) + theme_bw() + geom_point(alpha = 0.8,size = 3) + labs(x=paste("CPCoA 1 (", format(100 * eig.cave[1] / sum(eig.cave), digits=4), "%)", sep=""),y=paste("CPCoA 2 (", format(100 * eig.cave[2] / sum(eig.cave), digits=4), "%)", sep="")) + ggtitle(paste(format(100 * variance.cave, digits=3), " % of variance; p=",format(p.val.cave, digits=2),sep="")) + scale_color_brewer(palette = "Paired")
 
 p <- grid.arrange(p5,p8,nrow=1)
-pp <- grid.arrange(p4,p6,p3,p7,nrow=2)
+pp <- grid.arrange(p4,p6,p2,p7,nrow=2)
 ggsave(p,filename = "beta.pdf",width = 10,height = 4)
 ggsave(pp,filename = "beta_other.pdf",width = 10,height = 8)
