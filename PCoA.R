@@ -78,7 +78,7 @@ hulls.w.r <- ddply(subset(points.w,sample_type=="Rock"), "elevation", find_hull)
 xlab.w<-paste("PCoA 1 (", format(100 * eig.w[1] / sum(eig.w), digits=4), "%)",sep="")
 ylab.w<-paste("PCoA 2 (", format(100 * eig.w[2] / sum(eig.w), digits=4), "%)",sep="")
 
-p1 <- ggplot(points.w,aes(x = x,y = y, color = elevation)) + geom_point(alpha = 0.9, size = 3) + labs(x=xlab.w, y=ylab.w,title = "PCoA plot of weighted unifrac distance") + facet_wrap(~sample_type,nrow = 2,scales = "free") + geom_polygon(data = hulls.w.a, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3) + geom_polygon(data = hulls.w.w, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3) + geom_polygon(data = hulls.w.s, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3) + geom_polygon(data = hulls.w.r, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3)
+p1 <- ggplot(points.w,aes(x = x,y = y, color = elevation)) + geom_point(alpha = 0.9, size = 3) + labs(x=xlab.w, y=ylab.w,title = "PCoA plot of weighted unifrac distance") + facet_wrap(~sample_type,nrow = 1,scales = "fixed") + geom_polygon(data = hulls.w.a, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3) + geom_polygon(data = hulls.w.w, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3) + geom_polygon(data = hulls.w.s, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3) + geom_polygon(data = hulls.w.r, alpha = 0.3, aes(fill = factor(elevation)),show.legend = F, linetype = 3)
 
 p2 <- ggplot(points.u,aes(x = x,y = y, color = elevation)) + geom_point(alpha = 0.8, size = 3) + labs(x=xlab, y=ylab,title = "PCoA plot of unweighted unifrac distance")
 

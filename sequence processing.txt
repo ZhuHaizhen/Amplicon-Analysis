@@ -72,7 +72,7 @@ python /data/share/scripts/map2qiime.py in.map.uc > in.otu_map.txt
 make_otu_table.py -i otu_map.txt -t GG_assigned_taxonomy/cave_otus_filtered_tax_assignments.txt -o cave_otu_table.biom
 make_otu_table.py -i in.otu_map.txt -t in.GG_assigned_taxonomy/cave.in_otus_filtered_tax_assignments.txt -o cave.in_otu_table.biom
 
-# OTU table filteration
+# OTU table filtration
 filter_otus_from_otu_table.py --min_count_fraction 0.00001 -i cave_otu_table.biom -o cave_otu_table_filtered.biom
 filter_otus_from_otu_table.py --min_count_fraction 0.00001 -i cave.in_otu_table.biom -o cave.in_otu_table_filtered.biom
 
